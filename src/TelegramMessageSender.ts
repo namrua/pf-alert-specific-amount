@@ -4,6 +4,9 @@ import TelegramBot from 'node-telegram-bot-api';
 // let token = '1806320860:AAHBv2OCvs4yT_XzjR32shnf4UtiCD9U_YE';
 //pf-twitter-bot
 let token = '7868476486:AAHsm3zCPWXRimE39DgUMhB3KxHIyjTH9Sg';
+
+//namzua
+// let token = '8120706881:AAFU5c5sQfJiuh7Na9SnrXjug2hIz29BywE';
 const bot = new TelegramBot(token, { polling: false });
 
 export default class TelegramMessageSender {

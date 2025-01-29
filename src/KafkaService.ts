@@ -2,11 +2,18 @@ import { Kafka, logLevel } from "kafkajs";
 import { redisPub } from "./RedisService";
 import TelegramMessageSender from "./TelegramMessageSender";
 import Utils from "./Utils";
+import TelegramMessageBuilder from "./TelegramMessageBuilder";
+import { PfTokenAmountResponse } from "./ResponseModel";
+import { ClickHouseService } from "./ClickHouseService";
+import { ClickhouseQuery } from "./Queries";
 
 const kafkaBroker = "49.12.174.250:9092";
 const tradeTopic = "sol-tx";
 
 const groupId = -1002365301981;
+
+//namzua
+// const groupId = -1002255160929;
 
 
 class KafkaService {
@@ -70,11 +77,20 @@ class KafkaService {
         let filteredData = tradingRequests.filter(tradingRequest => tradingRequest.token_amount == 793100000
             && ((tradingRequest.exchange == "pump" && ["buy", "sell"].includes(tradingRequest.trade_type))));
         for (let tradingRequest of filteredData) {
-            console.log('Send pf alert:', tradingRequest.token);
-            await TelegramMessageSender.sendMessage(groupId, `<code>${tradingRequest.token}</code>`, null);
+            const [deployerHistory, tokenInfo] = await Promise.all([
+                ClickHouseService.query<DeployerHistory>(ClickhouseQuery.GET_DEPLOYER_HISTORY, { mintId: tradingRequest.token }),
+                ClickHouseService.query<any>(ClickhouseQuery.GET_TOKEN_INFO, { mintId: tradingRequest.token }),
+            ]) as unknown as [DeployerHistory, any];
+
+            const response: PfTokenAmountResponse = {
+                mintId: tradingRequest.token,
+                made: deployerHistory.made,
+                officialLinks: JSON.parse(tokenInfo.officialLinks),
+            }
+            const res = TelegramMessageBuilder.buildMessage(response);
+            await TelegramMessageSender.sendMessage(groupId, res, null);
         }
     }
-
 
 }
 export default KafkaService;
